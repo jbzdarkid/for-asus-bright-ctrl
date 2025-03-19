@@ -14,6 +14,8 @@ class OptMan {
   int64_t (*MyOptRpcClientClose)(void *rpcClient){};
   int64_t (*MyOptSetSplendidDimmingFunc)(int nValue, LPCSTR OptionString,
                                          void *rpcClient){};
+  int64_t (*MyOptSetSplendidCPanelDimmingFunc)(int nValue, LPCSTR OptionString,
+                                               void *rpcClient){};
   int64_t (*MyOptGetSplendidColorModeFunc)(void *rpcClient){};
 
   void (*SetCallbackForReturnOptimizationResult)(CallbackForOptimizationTy fn,
@@ -38,7 +40,7 @@ public:
 private:
   void CallbackForOptimization(int nFunc, int nData, LPCSTR lpstrData);
   void CallbackForOptimizationEx(int nFunc, int nData, LPCWSTR lpstrData);
-  void updateRpcConnectStatus(int64_t rpcStatus, std::string_view funcName);
+  bool updateRpcConnectStatus(int64_t rpcStatus, std::string_view funcName);
   bool InitRPCConnection();
 
   std::unique_ptr<void, decltype(MyOptRpcClientClose)> rpcClient =

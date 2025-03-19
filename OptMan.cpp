@@ -55,6 +55,7 @@ OptMan::OptMan() {
   IMPORT_FUNC(hClientModule, MyOptRpcClientClose);
 
   IMPORT_FUNC(hClientModule, MyOptSetSplendidDimmingFunc);
+  IMPORT_FUNC(hClientModule, MyOptSetSplendidCPanelDimmingFunc);
   IMPORT_FUNC(hClientModule, MyOptGetSplendidColorModeFunc);
 
   IMPORT_FUNC(hClientModule, SetCallbackForReturnOptimizationResult);
@@ -77,11 +78,16 @@ void OptMan::SetSplendidDimming(int nMode) {
   if (!CheckValid())
     return;
   LOGI_V_LN("MyOptSetSplendidDimmingFunc(", nMode, ")");
-  updateRpcConnectStatus(
-      MyOptSetSplendidDimmingFunc(nMode, "", rpcClient.get()),
-      "MyOptSetSplendidDimmingFunc");
-  if (isRpcConnectOk)
-    nSplendidDcScale = nMode;
+  if (!updateRpcConnectStatus(
+          MyOptSetSplendidDimmingFunc(nMode, "", rpcClient.get()),
+          "MyOptSetSplendidDimmingFunc"))
+    return;
+  LOGI_V_LN("MyOptSetSplendidCPanelDimmingFunc(", nMode, ")");
+  if (!updateRpcConnectStatus(
+          MyOptSetSplendidCPanelDimmingFunc(nMode, "", rpcClient.get()),
+          "MyOptSetSplendidCPanelDimmingFunc"))
+    return;
+  nSplendidDcScale = nMode;
 }
 
 void OptMan::GetOptimizationData() {
@@ -93,7 +99,7 @@ void OptMan::GetOptimizationData() {
 }
 
 void OptMan::CallbackForOptimization(int nFunc, int nData, LPCSTR lpstrData) {
-  LOGI_V_LN("nFunc", nFunc, ", nData: ", nData, ", lpstrData: ", lpstrData);
+  LOGI_V_LN("nFunc ", nFunc, ", nData: ", nData, ", lpstrData: ", lpstrData);
   CallbackForOptimizationEx(nFunc, nData, CA2W(lpstrData));
 }
 
@@ -105,6 +111,9 @@ void OptMan::CallbackForOptimizationEx(int nFunc, int nData,
   switch (nFunc) {
   case 279:
     LOGI_V_LN("MyOptSetSplendidDimmingFunc returned ", nData);
+    break;
+  case 282:
+    LOGI_V_LN("MyOptSetSplendidCPanelDimmingFunc returned ", nData);
     break;
   case 18: {
     std::wstring_view wstr(lpstrData);
@@ -132,18 +141,19 @@ void OptMan::CallbackForOptimizationEx(int nFunc, int nData,
   }
 }
 
-void OptMan::updateRpcConnectStatus(int64_t rpcStatus,
+bool OptMan::updateRpcConnectStatus(int64_t rpcStatus,
                                     std::string_view funcName) {
   switch (rpcStatus) {
   case RPC_X_BAD_STUB_DATA:
     LOGW_V_LN("stub received bad data for ", funcName, ", but ok");
-    return;
+    return true;
   case ERROR_SUCCESS:
     LOGI_V_LN("RPC connect status still ok for ", funcName);
-    return;
+    return true;
   }
   LOGE_V_LN("RPC connect failed for ", funcName, ": ", rpcStatus);
   isRpcConnectOk = false;
+  return false;
 }
 
 bool OptMan::InitRPCConnection() {
