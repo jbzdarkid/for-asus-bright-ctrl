@@ -1,10 +1,10 @@
 name: Build and package release
 on:
-  pull_request
+  pull_request:
   push:
     branches:
       - 'main'
-  workflow_dispatch
+  workflow_dispatch:
 
 jobs:
   run:
