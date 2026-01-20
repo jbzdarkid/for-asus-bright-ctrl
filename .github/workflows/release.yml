@@ -1,0 +1,21 @@
+name: Build and package release
+on:
+  pull_request
+  push:
+    branches:
+      - 'main'
+  workflow_dispatch
+
+jobs:
+  run:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: microsoft/setup-msbuild@v2
+    - name: Build the codebase
+      run: msbuild for-asus-bright-ctrl.sln -t:rebuild -verbosity:diag -property:Configuration=Release
+    - name: Debug
+      run: tree
+
+
