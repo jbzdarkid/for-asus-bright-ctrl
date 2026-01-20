@@ -27,7 +27,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: for-asus-bright-ctrl-x86_64-msvc.zip
-        path: for-asus-bright-ctrl-x86_64-msvc.zip
+        name: for-asus-bright-ctrl-x86_64-msvc
+        path: output/*
 
 
