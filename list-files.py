@@ -3,7 +3,7 @@ from pathlib import Path
 root = Path('.')
 for p in root.glob('**/mfc140u.dll'):
   print(p)
-p = Path('C:\Program Files\Microsoft Visual Studio\2022\Enterprise')
+p = Path(r'C:\Program Files\Microsoft Visual Studio\2022\Enterprise')
 print(p.exists())
 
 paths = [str(q.resolve()) for q in p.glob('**/*.*')]

@@ -17,17 +17,13 @@ jobs:
       run: msbuild for-asus-bright-ctrl.sln -property:Configuration=Release
     - name: Find mfc140u.dll
       run: python list-files.py
-    - name: Create and package output directory
+    - name: Copy files to output directory
       run: |
         mkdir output
         cp -r scripts/* output
         cp x64\Release\for-asus-bright-ctrl.exe output
-        Compress-Archive output "for-asus-bright-ctrl-x86_64-msvc.zip"
-
-    - name: Upload artifact
+    - name: Zip and upload output directory
       uses: actions/upload-artifact@v4
       with:
         name: for-asus-bright-ctrl-x86_64-msvc
         path: output/*
-
-
