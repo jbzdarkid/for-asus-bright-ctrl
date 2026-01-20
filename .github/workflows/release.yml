@@ -16,9 +16,6 @@ jobs:
     - name: Build the codebase
       run: msbuild for-asus-bright-ctrl.sln -property:Configuration=Release
     - name: Debug
-      run: |
-        tree
-        git status
-        git ls-files --others --exclude-standard
+      run: python list-files.py
 
 
