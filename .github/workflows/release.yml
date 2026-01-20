@@ -15,13 +15,12 @@ jobs:
     - uses: microsoft/setup-msbuild@v2
     - name: Build the codebase
       run: msbuild for-asus-bright-ctrl.sln -property:Configuration=Release
-    - name: Find mfc140u.dll
-      run: python list-files.py
     - name: Copy files to output directory
       run: |
         mkdir output
-        cp -r scripts/* output
-        cp x64\Release\for-asus-bright-ctrl.exe output
+        cp -r ./scripts/* output
+        cp ./x64\Release\for-asus-bright-ctrl.exe output
+        cp "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\VC\vcpackages\mfc140u.dll" output
     - name: Zip and upload output directory
       uses: actions/upload-artifact@v4
       with:
