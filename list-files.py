@@ -1,9 +1,5 @@
 from pathlib import Path
 
 root = Path('.')
-paths = []
-for p in root.glob('**/*.*'):
-  paths.append(str(p.resolve()))
-paths.sort()
-for p in paths:
+for p in root.glob('**/mfc140u.dll'):
   print(p)
