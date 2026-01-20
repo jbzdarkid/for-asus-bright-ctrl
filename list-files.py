@@ -1,5 +1,9 @@
 from pathlib import Path
 
 root = Path('.')
+paths = []
 for p in root.glob('**/*.*'):
-  print(p.resolve())
+  paths.append(str(p.resolve()))
+paths.sort()
+for p in paths:
+  print(p)
