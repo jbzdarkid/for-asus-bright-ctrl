@@ -23,11 +23,14 @@ echo ('Started as admin "{0}" at "{1}"' -f ($env:USERNAME),($pwd))
 
 $action = New-ScheduledTaskAction -Execute "$pwd\for-asus-bright-ctrl.exe" -WorkingDirectory "$pwd"
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+# Delay so the at-logon ensure-rpc.ps1 task has time to (re)apply the
+# registry value and restart ASUSOptimization before the exe connects.
+$trigger.Delay = 'PT1M'
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -ExecutionTimeLimit 0
 Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "for-asus-bright-ctrl" -Description "This task runs a third-party program to control ASUS Flicker-Free Dimming with hot keys" -Settings $settings -Force
 Start-ScheduledTask -TaskName "for-asus-bright-ctrl"
 
-$action = New-ScheduledTaskAction -Execute "regedit" -Argument "/s install.reg" -WorkingDirectory "$pwd"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -NoProfile -File `"$pwd\ensure-rpc.ps1`"" -WorkingDirectory "$pwd"
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries
 Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "for-asus-bright-ctrl regedit" -Description "This task edits the registry to allow the third-party program to control ASUS Flicker-Free Dimming with hot keys" -Settings $settings -Force -RunLevel Highest

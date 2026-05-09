@@ -25,4 +25,4 @@ Stop-ScheduledTask -TaskName "for-asus-bright-ctrl"
 Unregister-ScheduledTask -TaskName "for-asus-bright-ctrl" -Confirm:$false
 
 Unregister-ScheduledTask -TaskName "for-asus-bright-ctrl regedit" -Confirm:$false
-regedit /s "$installDir\uninstall.reg"
+regedit /s "$pwd\uninstall.reg"

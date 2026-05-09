@@ -172,6 +172,9 @@ bool OptMan::InitRPCConnection() {
     return isRpcConnectOk = true;
   } else {
     LOGE_V_LN("could not initialize RPC client: ", ret);
+    if (ret == ERROR_ACCESS_DENIED) {
+      LOGE_V_LN("Did you run install.ps1?");
+    }
     return isRpcConnectOk = false;
   }
 }
