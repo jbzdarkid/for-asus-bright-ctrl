@@ -30,9 +30,9 @@ Stop-ScheduledTask -TaskName "for-asus-bright-ctrl" -ErrorAction SilentlyContinu
 Stop-Process -Name "for-asus-bright-ctrl" -Force -ErrorAction SilentlyContinue
 
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-Copy-Item -Path "$pwd\*" -Include 'for-asus-bright-ctrl.exe','ensure-rpc.ps1','uninstall.ps1','uninstall.reg' -Destination $installDir -Force
+Copy-Item -Path "$PSScriptRoot\*" -Include 'for-asus-bright-ctrl.exe','launch.ps1','ensure-rpc.ps1','uninstall.ps1' -Destination $installDir -Force
 
-$action = New-ScheduledTaskAction -Execute "$installDir\for-asus-bright-ctrl.exe" -WorkingDirectory "$installDir"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File `"$installDir\launch.ps1`"" -WorkingDirectory "$installDir"
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $targetUser
 # Delay so the at-logon ensure-rpc.ps1 task has time to (re)apply the
 # registry value and restart ASUSOptimization before the exe connects.

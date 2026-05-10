@@ -5,7 +5,8 @@ This is a simple app that I created to control MyASUS' "Flicker-Free Dimming" br
 - Download the latest build from [releases](https://github.com/NH5pml30/for-asus-bright-ctrl/releases);
 - Extract the folder. It should contain 5 files:
   - `for-asus-bright-ctrl.exe` - the app;
-  - `install.ps1`, `uninstall.ps1`, `ensure-rpc.ps1`, `uninstall.reg` - (un)installation scripts.
+  - `launch.ps1` - thin launcher invoked by the scheduled task at log-in;
+  - `install.ps1`, `uninstall.ps1`, `ensure-rpc.ps1` - (un)installation scripts.
 - run `./install.ps1` in PowerShell from the extracted directory. Note that script execution should be enabled, see more [here, for example](https://superuser.com/questions/106360/how-to-enable-execution-of-powershell-scripts). It will display a UAC prompt half-way through, click "Yes" or similar. It is needed to modify the Windows registry.
 
   This will copy the app and helper scripts into `%LOCALAPPDATA%\for-asus-bright-ctrl` and register two scheduled tasks (`for-asus-bright-ctrl` and `for-asus-bright-ctrl regedit`) to run on every current user's log-in. The extracted folder can be deleted afterwards; re-running `install.ps1` from a newer release upgrades the install in place. Warning: this will disable security checks that the `AsusOptimization.exe` RPC server does by setting a value in the Windows registry, so that this process can communicate with it.

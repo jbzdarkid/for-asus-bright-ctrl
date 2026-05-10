@@ -26,6 +26,6 @@ Stop-ScheduledTask -TaskName "for-asus-bright-ctrl" -ErrorAction SilentlyContinu
 Unregister-ScheduledTask -TaskName "for-asus-bright-ctrl" -Confirm:$false -ErrorAction SilentlyContinue
 
 Unregister-ScheduledTask -TaskName "for-asus-bright-ctrl regedit" -Confirm:$false -ErrorAction SilentlyContinue
-regedit /s "$pwd\uninstall.reg"
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\ASUS\ASUS System Control Interface\AsusOptimization\ASUS Keyboard Hotkeys' -Name 'SecurityCheck' -Value 1 -Type DWord -ErrorAction SilentlyContinue
 
 if (Test-Path $installDir) { Remove-Item -Recurse -Force $installDir }
