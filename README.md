@@ -37,3 +37,17 @@ You can either manually restart the app, or rerun the task from the Task Schedul
 If you want to build this from source, you will need Visual Studio 2022 with Desktop Development with C++ and MFC libraries. Just build the project and grab the resulting `for-asus-bright-ctrl.exe` file with the scripts from `./scripts` folder in the repo.
 
 Disclaimer: I am not affiliated, associated, authorized, endorsed by, or in any way officially connected with ASUSTek Computer Inc., or any of its subsidiaries or its affiliates. The official ASUS web site is available at https://www.asus.com.
+
+---
+
+## Changes in this fork
+[This fork](https://github.com/jbzdarkid/for-asus-bright-ctrl) is functionally identical to the original, but adds a few QoL improvements:
+
+- Permanent install location: The `install.ps1` script now copies files into `%LOCALAPPDATA%\for-asus-bright-ctrl` so that the download can be safely deleted
+  - Re-running the install script will also clean this folder out, in case of a bad installation.
+- Automated updates: The at-logon task will check for updates and automatically download, install, and restart the executable (update logs are at `update-log.txt`).
+  - Automated releases: Commits pushed to the master branch will automatically build and be uploaded as github releases.
+- Replaced the `.reg` (un)installation files with direct powershell commands. This helps reduce the size of the update payload.
+  - We are also statically linking `mfc140u.dll` to reduce the size of the update payload.
+- Fixed a couple of bugs which caused the UI to "hang" or the keyboard to become unresponsive.
+- Improved a log message in case you run `for-asus-bright-ctrl.exe` directly out of the install zip, instead of running the installer.
