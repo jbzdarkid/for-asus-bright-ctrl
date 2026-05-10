@@ -1,18 +1,29 @@
 name: Build and package release
 on:
-  pull_request:
   push:
     branches:
       - 'master'
-  workflow_dispatch:
 
 jobs:
   run:
     runs-on: windows-latest
+    permissions:
+      contents: write  # needed by `gh release create`
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # full history for `git rev-list --count`
     - uses: microsoft/setup-msbuild@v2
+    - name: Compute version and stamp launch.ps1
+      id: ver
+      shell: bash
+      run: |
+        set -euo pipefail
+        tag="v0.0.$(git rev-list --count HEAD)"
+        echo "tag=$tag" >> "$GITHUB_OUTPUT"
+        grep -q "'0.0.0-dev'" scripts/launch.ps1 || { echo "sentinel missing"; exit 1; }
+        sed -i "s/'0.0.0-dev'/'$tag'/" scripts/launch.ps1
     - name: Build the codebase
       run: msbuild for-asus-bright-ctrl.sln -property:Configuration=Release
     - name: Copy files to output directory
@@ -20,8 +31,13 @@ jobs:
         mkdir output
         cp -r ./scripts/* output
         cp ./x64\Release\for-asus-bright-ctrl.exe output
-    - name: Zip and upload output directory
-      uses: actions/upload-artifact@v4
-      with:
-        name: for-asus-bright-ctrl-x86_64-msvc
-        path: output/*
+    - name: Create GitHub Release
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        $tag = '${{ steps.ver.outputs.tag }}'
+        # Filename is contractual: scripts/launch.ps1 looks it up by name.
+        $zip = 'for-asus-bright-ctrl.zip'
+        Compress-Archive -Path output/* -DestinationPath $zip -Force
+        gh release create $tag $zip --title $tag --notes "Automated release for ${{ github.sha }}." --target ${{ github.sha }}

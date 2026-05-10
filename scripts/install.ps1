@@ -29,10 +29,15 @@ echo ('Started as admin "{0}" at "{1}" (installing to "{2}")' -f ($env:USERNAME)
 Stop-ScheduledTask -TaskName "for-asus-bright-ctrl" -ErrorAction SilentlyContinue
 Stop-Process -Name "for-asus-bright-ctrl" -Force -ErrorAction SilentlyContinue
 
-New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-Copy-Item -Path "$PSScriptRoot\*" -Include 'for-asus-bright-ctrl.exe','launch.ps1','ensure-rpc.ps1','uninstall.ps1' -Destination $installDir -Force
+# Wipe the install dir and copy fresh files in, so a re-download-and-reinstall is a clean slate.
+# Skipped when running from the install dir itself, since we'd be deleting our own files.
+if ($PSScriptRoot -ne $installDir) {
+    Remove-Item -Recurse -Force $installDir -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+    Copy-Item -Path "$PSScriptRoot\*" -Destination $installDir -Recurse -Force
+}
 
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File `"$installDir\launch.ps1`"" -WorkingDirectory "$installDir"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -NoProfile -File `"$installDir\launch.ps1`"" -WorkingDirectory "$installDir"
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $targetUser
 # Delay so the at-logon ensure-rpc.ps1 task has time to (re)apply the
 # registry value and restart ASUSOptimization before the exe connects.
