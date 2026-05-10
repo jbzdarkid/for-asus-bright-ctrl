@@ -44,6 +44,12 @@ function Invoke-UpdateCheck {
         # Download the zipfile to a nearby folder so we can move instead of copying across drives.
         $stage   = Join-Path $PSScriptRoot '.update'
         $zipPath = "$stage.zip"
+
+        # Wipe any leftovers from a prior crashed/aborted update so we don't
+        # mix stale files into the new install or hit Expand-Archive collisions.
+        Remove-Item -LiteralPath $stage   -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $zipPath -Force          -ErrorAction SilentlyContinue
+
         Write-UpdateLog "downloading latest assets from $($asset.browser_download_url)"
         Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zipPath -Headers $headers -TimeoutSec 120 -UseBasicParsing
 
@@ -58,6 +64,9 @@ function Invoke-UpdateCheck {
 
         # Stop before updating so that we can overwrite the exe.
         Stop-Process -Name 'for-asus-bright-ctrl' -Force -ErrorAction SilentlyContinue
+
+        # Give the OS a moment to release the file handles so our copy doesn't hang.
+        Start-Sleep -Milliseconds 500
 
         # Do not recurse because it's not a consistent order.
         # Instead, move each file directly from the unzip folder to the production folder.

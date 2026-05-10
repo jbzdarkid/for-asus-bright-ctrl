@@ -4,6 +4,11 @@ on:
     branches:
       - 'master'
 
+# Serialize releases so that two quick pushes won't collide on revision count.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   run:
     runs-on: windows-latest
@@ -40,4 +45,5 @@ jobs:
         # Filename is contractual: scripts/launch.ps1 looks it up by name.
         $zip = 'for-asus-bright-ctrl.zip'
         Compress-Archive -Path output/* -DestinationPath $zip -Force
-        gh release create $tag $zip --title $tag --notes "Automated release for ${{ github.sha }}." --target ${{ github.sha }}
+        $pdb = 'x64/Release/for-asus-bright-ctrl.pdb'
+        gh release create $tag $zip $pdb --title $tag --notes "Automated release for ${{ github.sha }}." --target ${{ github.sha }}
