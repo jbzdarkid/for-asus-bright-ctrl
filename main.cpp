@@ -48,6 +48,14 @@ protected:
 
   afx_msg void OnBrightnessChanged(WPARAM wParam, LPARAM lParam) {
     int Percent = (int)wParam;
+    // Coalesce any further pending brightness-change requests so we only issue
+    // one (slow) RPC call for the latest target instead of one per keypress.
+    // The UI thread has already shown the user every intermediate step.
+    MSG Msg;
+    while (PeekMessage(&Msg, NULL, WM_USER_BRIGHTNESS_CHANGED,
+                       WM_USER_BRIGHTNESS_CHANGED, PM_REMOVE)) {
+      Percent = (int)Msg.wParam;
+    }
     LOGI_V_LN("got task to set brightness to ", Percent, "%");
     if (Percent < 0) {
       LOGI_V_LN("requested brightness sync");
