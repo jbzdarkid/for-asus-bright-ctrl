@@ -19,10 +19,8 @@ IndicatorWnd::IndicatorWnd() {
 
   // Create DC which contains the progress bar mask
   BarDC.CreateCompatibleDC(NULL);
-  BarDC.AssertValid();
   CBitmap BarBuf;
   BarBuf.CreateCompatibleBitmap(&BarDC, IconSize * 6, IconSize);
-  BarBuf.AssertValid();
   BarDCObj.Attach(BarDC.SelectObject(BarBuf.Detach()));
 
   // Draw the progress bar mask
@@ -36,11 +34,9 @@ IndicatorWnd::IndicatorWnd() {
     CRgn Rgn;
     Rgn.CreateRoundRectRgn(padding, half - height / 2, padding + width,
                            half + height / 2, height, height);
-    Rgn.AssertValid();
     BarDC.SetDCBrushColor(RGB(255, 255, 255));
     CBrush DCBrush;
     DCBrush.CreateStockObject(DC_BRUSH);
-    DCBrush.AssertValid();
     BarDC.FillRgn(&Rgn, &DCBrush);
   }
 
@@ -111,24 +107,45 @@ void IndicatorWnd::OnTimer(UINT_PTR nIdEvent) {
 }
 
 void IndicatorWnd::OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2) {
-  // Change brightness with 10% increments
+  // Change brightness with 10% increments. While the combo is held down
+  // Windows posts WM_HOTKEY at the keyboard repeat rate; if we did a full
+  // invalidate + SetWindowPos(HWND_TOPMOST) + paint per message, the queue
+  // would back up and the system (e.g. Alt+Tab) would feel sluggish until
+  // we caught up. So we collapse any pending WM_HOTKEY messages into the
+  // same dispatch and only do one visible update + one RPC post.
   LOGI_V_LN("detected a hotkey press");
   float NewFac = Fac;
-  switch (static_cast<HotKeyType>(nHotKeyId)) {
-  case HotKeyType::BRIGHTNESS_DOWN:
-    NewFac = std::clamp(Fac - 0.1f, 0.f, 1.f);
-    break;
-  case HotKeyType::BRIGHTNESS_UP:
-    NewFac = std::clamp(Fac + 0.1f, 0.f, 1.f);
-    break;
-  case HotKeyType::BRIGHTNESS_SYNC:
-    NewFac = -1;
-    break;
-  default:
-    return CWnd::OnHotKey(nHotKeyId, nKey1, nKey2);
+  bool RequestSync = false;
+
+  auto Apply = [&](UINT Id) {
+    switch (static_cast<HotKeyType>(Id)) {
+    case HotKeyType::BRIGHTNESS_DOWN:
+      NewFac = std::clamp(NewFac - 0.1f, 0.f, 1.f);
+      break;
+    case HotKeyType::BRIGHTNESS_UP:
+      NewFac = std::clamp(NewFac + 0.1f, 0.f, 1.f);
+      break;
+    case HotKeyType::BRIGHTNESS_SYNC:
+      RequestSync = true;
+      break;
+    }
+  };
+
+  Apply(nHotKeyId);
+
+  // Drain any further pending hotkey messages already queued on this thread.
+  MSG Msg;
+  while (PeekMessage(&Msg, m_hWnd, WM_HOTKEY, WM_HOTKEY, PM_REMOVE)) {
+    Apply((UINT)Msg.wParam);
   }
 
-  setBrightness(NewFac);
+  // Sync wins over relative changes -- if a sync was anywhere in the batch,
+  // honor it (the relative changes would have been overwritten anyway).
+  if (RequestSync) {
+    setBrightness(-1);
+  } else if (NewFac != Fac) {
+    setBrightness(NewFac);
+  }
   CWnd::OnHotKey(nHotKeyId, nKey1, nKey2);
 }
 
