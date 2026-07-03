@@ -22,13 +22,14 @@ if ($current -eq 0) {
 }
 
 echo "Setting $keyPath\$valName = 0 (was: $current)"
-New-Item -Path $keyPath -Force | Out-Null
-New-ItemProperty -Path $keyPath -Name $valName -Value 0 -PropertyType DWord -Force | Out-Null
+New-Item -Path $keyPath -Force
+New-ItemProperty -Path $keyPath -Name $valName -Value 0 -PropertyType DWord -Force
 
-$svc = Get-Service -Name $svcName -ErrorAction SilentlyContinue
-if ($null -eq $svc) {
-    Write-Warning "service '$svcName' not found; cannot restart. Reboot to apply."
-    exit
-}
-echo "Restarting service '$svcName'..."
-Restart-Service -Name $svcName -Force
+# Stopped restarting the service because it just resets the regkey back.
+# $svc = Get-Service -Name $svcName -ErrorAction SilentlyContinue
+# if ($null -eq $svc) {
+#     Write-Warning "service '$svcName' not found; cannot restart. Reboot to apply."
+#     exit
+# }
+# echo "Restarting service '$svcName'..."
+# Restart-Service -Name $svcName -Force
