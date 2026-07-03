@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   run:
-    runs-on: windows-latest
+    runs-on: windows-2022
     permissions:
       contents: write  # needed by `gh release create` (only used on master push)
 
