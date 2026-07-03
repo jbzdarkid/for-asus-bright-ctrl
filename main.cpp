@@ -1,8 +1,10 @@
 #include <afxwin.h>
 #include <afxmt.h>
 
+#include <atomic>
 #include <cassert>
 #include <chrono>
+#include <climits>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -38,6 +40,15 @@ class CRpcThread : public CWinThread {
 public:
   CRpcThread(CWinThread *Parent) : Parent(Parent) {}
 
+  // Called from the UI thread. Records the newest requested target and wakes
+  // the worker. Because the target is stored in a shared atomic (rather than
+  // carried by the message itself), the worker can always recover the most
+  // recent value even if several requests pile up while it is busy.
+  void PostRequest(int Percent) {
+    PendingRequest.store(Percent, std::memory_order_release);
+    PostThreadMessage(WM_USER_BRIGHTNESS_CHANGED, 0, 0);
+  }
+
 protected:
   BOOL InitInstance() override {
     resetBrightness(false);
@@ -47,24 +58,34 @@ protected:
   DECLARE_MESSAGE_MAP()
 
   afx_msg void OnBrightnessChanged(WPARAM wParam, LPARAM lParam) {
-    int Percent = (int)wParam;
-    // Coalesce any further pending brightness-change requests so we only issue
-    // one (slow) RPC call for the latest target instead of one per keypress.
-    // The UI thread has already shown the user every intermediate step.
+    // Collapse any extra wake-ups. The actual target lives in PendingRequest,
+    // which always holds the most recent request posted by the UI thread, so
+    // the queued messages themselves carry no data -- they are just nudges.
     MSG Msg;
     while (PeekMessage(&Msg, NULL, WM_USER_BRIGHTNESS_CHANGED,
                        WM_USER_BRIGHTNESS_CHANGED, PM_REMOVE)) {
-      Percent = (int)Msg.wParam;
     }
-    LOGI_V_LN("got task to set brightness to ", Percent, "%");
-    if (Percent < 0) {
-      LOGI_V_LN("requested brightness sync");
-      resetBrightness(true);
-      return;
+
+    // Apply the latest request, then re-check for a newer one. A request that
+    // arrives while we are busy with a (slow) RPC call simply overwrites the
+    // pending target, so the value we apply *last* is guaranteed to be the
+    // newest one the user asked for -- even under heavy load, where messages
+    // would otherwise be handled out of order and leave brightness stale.
+    for (;;) {
+      int Percent =
+          PendingRequest.exchange(NO_REQUEST, std::memory_order_acquire);
+      if (Percent == NO_REQUEST)
+        break;
+      LOGI_V_LN("got task to set brightness to ", Percent, "%");
+      if (Percent < 0) {
+        LOGI_V_LN("requested brightness sync");
+        resetBrightness(true);
+        continue;
+      }
+      if (!checkConnection())
+        break;
+      OptMan::get().SetSplendidDimming(int(40 + Percent / 100.0f * 60));
     }
-    if (!checkConnection())
-      return;
-    OptMan::get().SetSplendidDimming(int(40 + Percent / 100.0f * 60));
   }
 
 private:
@@ -89,6 +110,10 @@ private:
                 ShowIndicator);
   }
 
+  // Sentinel meaning "nothing pending". Valid requests are >= 0 (target
+  // percent) or -1 (sync), so INT_MIN can never collide with a real value.
+  static inline constexpr int NO_REQUEST = INT_MIN;
+  std::atomic<int> PendingRequest{NO_REQUEST};
   CWinThread *Parent{};
 };
 
@@ -223,7 +248,7 @@ protected:
     TheWindow->setBrightnessCallback([&](int Percent) {
       LOGI_V_LN("sending brightness changed to ", Percent,
                 "% to the RPC thread");
-      s->PostThreadMessage(WM_USER_BRIGHTNESS_CHANGED, (WPARAM)Percent, 0);
+      s->PostRequest(Percent);
     });
 
     return TRUE;
