@@ -22,7 +22,7 @@ if ($current -eq 0) {
 }
 
 echo "Setting $keyPath\$valName = 0 (was: $current)"
-New-Item -Path $keyPath -Force
+New-Item -Path $keyPath -ErrorAction SilentlyContinue
 New-ItemProperty -Path $keyPath -Name $valName -Value 0 -PropertyType DWord -Force
 
 # Stopped restarting the service because it just resets the regkey back.
