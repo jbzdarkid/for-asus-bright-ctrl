@@ -77,11 +77,14 @@ void OptMan::SetSplendidDimming(int nMode) {
   if (!CheckValid())
     return;
   LOGI_V_LN("MyOptSetSplendidDimmingFunc(", nMode, ")");
+  ResetEvent(hDimmingResultEvent);
   updateRpcConnectStatus(
       MyOptSetSplendidDimmingFunc(nMode, "", rpcClient.get()),
       "MyOptSetSplendidDimmingFunc");
-  if (isRpcConnectOk)
+  if (isRpcConnectOk) {
     nSplendidDcScale = nMode;
+    WaitForSingleObject(hDimmingResultEvent, 1000); // Wait for ASUS to confirm the brightness before firing another change 
+  }
 }
 
 void OptMan::GetOptimizationData() {
@@ -105,6 +108,7 @@ void OptMan::CallbackForOptimizationEx(int nFunc, int nData,
   switch (nFunc) {
   case 279:
     LOGI_V_LN("MyOptSetSplendidDimmingFunc returned ", nData);
+    SetEvent(hDimmingResultEvent);
     break;
   case 18: {
     std::wstring_view wstr(lpstrData);
