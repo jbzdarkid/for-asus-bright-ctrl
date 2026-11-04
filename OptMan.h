@@ -48,4 +48,6 @@ private:
 
   static inline HMODULE hClientModule{};
   static inline std::unique_ptr<OptMan> instance;
+  static inline HANDLE hDimmingResultEvent =
+      CreateEvent(NULL, FALSE, FALSE, NULL);
 };
